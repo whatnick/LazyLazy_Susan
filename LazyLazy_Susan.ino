@@ -10,64 +10,97 @@
 
 #include <AccelStepper.h>
 
-// The X Stepper pins
+
+// The Lazy susan stepper pins
 #define STEPPER1_DIR_PIN 4
 #define STEPPER1_STEP_PIN 5
-// The Y stepper pins
-#define STEPPER2_DIR_PIN 7
-#define STEPPER2_STEP_PIN 6
+#define STEPPER1_ENABLE_PIN 8
+
 
 // Define some steppers and the pins the will use
 AccelStepper stepper1(AccelStepper::DRIVER, STEPPER1_STEP_PIN, STEPPER1_DIR_PIN);
-AccelStepper stepper2(AccelStepper::DRIVER, STEPPER2_STEP_PIN, STEPPER2_DIR_PIN);
 
+//Analog inputs
 #define ANALOG_X A0
 #define ANALOG_Y A1
 
+//Switch to capture joystick press
+#define SWITCH_PIN 3
+
 int x_val,y_val;
-int step_size = 10;
+float step_speed = 100.0;
+const float max_speed = 200.0;
+const float min_speed = 10.0;
 
 void setup()
 {
-  stepper1.setMaxSpeed(100.0);
-  stepper1.setAcceleration(100.0);
+  stepper1.setMaxSpeed(step_speed*2.0);
+  stepper1.setAcceleration(200.0);
+  //stepper1.setEnablePin(STEPPER1_ENABLE_PIN);
+  //stepper1.setPinsInverted(false, false, true);
+
+  pinMode(STEPPER1_ENABLE_PIN,OUTPUT);
+  pinMode(SWITCH_PIN, INPUT_PULLUP);
+
+  Serial.begin(9600);
 }
 
 void loop()
 {
   // Read values
   x_val = analogRead(ANALOG_X);
-  y_val = analogRead(ANALOG_Y);
-
-  
   if(x_val > 200 and x_val < 800)
   {
+    stepper1.stop();
     stepper1.disableOutputs();
+    digitalWrite(STEPPER1_ENABLE_PIN,HIGH);
   }
   else
   {
+    digitalWrite(STEPPER1_ENABLE_PIN,LOW);
     stepper1.enableOutputs();
   }
   
   if(x_val > 900)
   {
-    stepper1.move(step_size);
+    stepper1.move(10);
+    stepper1.run();
+    return;
   }
 
   if(x_val <100)
   {
-    stepper1.move(-step_size);
+    stepper1.move(-10);
+    stepper1.run();
+    return;
   }
+  
+  y_val = analogRead(ANALOG_Y);
 
   if(y_val > 900)
   {
-    if(step_size<30) step_size++;
+    if(step_speed < max_speed) step_speed+=0.1;
   }
 
   if(y_val <100)
   {
-    if(step_size>0) step_size--;
+    if(step_speed > min_speed) step_speed-=0.1;
   }
 
-  stepper1.run();
+  int cont_run = digitalRead(SWITCH_PIN);
+  
+  if(cont_run==0)
+  {
+    digitalWrite(STEPPER1_ENABLE_PIN,LOW);
+    stepper1.enableOutputs();
+    stepper1.setSpeed(step_speed);
+    stepper1.runSpeed();
+    return;
+  }
+  else
+  {
+    stepper1.stop();
+    digitalWrite(STEPPER1_ENABLE_PIN,HIGH);
+    stepper1.disableOutputs();
+  }
 }
