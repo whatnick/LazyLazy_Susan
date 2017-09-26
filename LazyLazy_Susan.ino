@@ -1,12 +1,12 @@
 /*
- * Lazy version of a lazy susan for time-lapse photography of
- * sculptures
- * 
- * Dual motor control for rotation of lazy-susan 
- * and Driving camera slide on rails
- * 
- * Analog joystick support
- */
+   Lazy version of a lazy susan for time-lapse photography of
+   sculptures
+
+   Dual motor control for rotation of lazy-susan
+   and Driving camera slide on rails
+
+   Analog joystick support
+*/
 
 #include <AccelStepper.h>
 
@@ -21,24 +21,53 @@
 AccelStepper stepper1(AccelStepper::DRIVER, STEPPER1_STEP_PIN, STEPPER1_DIR_PIN);
 AccelStepper stepper2(AccelStepper::DRIVER, STEPPER2_STEP_PIN, STEPPER2_DIR_PIN);
 
+#define ANALOG_X A0
+#define ANALOG_Y A1
+
+int x_val,y_val;
+int step_size = 10;
+
 void setup()
-{  
-    stepper1.setMaxSpeed(200.0);
-    stepper1.setAcceleration(200.0);
-    stepper1.moveTo(100);
-    
-    stepper2.setMaxSpeed(100.0);
-    stepper2.setAcceleration(100.0);
-    stepper2.moveTo(100);
+{
+  stepper1.setMaxSpeed(100.0);
+  stepper1.setAcceleration(100.0);
 }
 
 void loop()
 {
-    // Change direction at the limits
-    if (stepper1.distanceToGo() == 0)
-  stepper1.moveTo(-stepper1.currentPosition());
-    if (stepper2.distanceToGo() == 0)
-  stepper2.moveTo(-stepper2.currentPosition());
-    stepper1.run();
-    stepper2.run();
+  // Read values
+  x_val = analogRead(ANALOG_X);
+  y_val = analogRead(ANALOG_Y);
+
+  
+  if(x_val > 200 and x_val < 800)
+  {
+    stepper1.disableOutputs();
+  }
+  else
+  {
+    stepper1.enableOutputs();
+  }
+  
+  if(x_val > 900)
+  {
+    stepper1.move(step_size);
+  }
+
+  if(x_val <100)
+  {
+    stepper1.move(-step_size);
+  }
+
+  if(y_val > 900)
+  {
+    if(step_size<30) step_size++;
+  }
+
+  if(y_val <100)
+  {
+    if(step_size>0) step_size--;
+  }
+
+  stepper1.run();
 }
